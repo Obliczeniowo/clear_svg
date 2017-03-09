@@ -2,6 +2,7 @@
 # coding: utf-8
 
 # https://regexone.com/references/python - regularne wyrażenia
+# https://github.com/Obliczeniowo/clear_svg/blob/master/clear_svg.py
 
 import re
 import sys
@@ -33,7 +34,13 @@ class SvgClear:
 		self.filetext = re.sub(r"overflow:visible;","", self.filetext)
 		self.filetext = re.sub(r"linearGradient([\d]{1,})", r'lg\1', self.filetext);
 		
+		self.clearId("path")
+		self.clearId("rect")
+		
 		self.filetext = re.sub(r"[\s]{2,}", " ", self.filetext)
+		
+		self.clearPathStyle()
+		
 		self.filetext = re.sub(r"\s*<namedview.*?>.*?</namedview>", "", self.filetext)
 		self.filetext = re.sub(r"\s*<namedview.*?/>\s*", "", self.filetext)
 		self.filetext = re.sub(r"<cc:Work.*?</cc:Work>", "", self.filetext)
@@ -63,16 +70,35 @@ class SvgClear:
 		self.filetext = re.sub(r"inkscape:export-ydpi=\".*?\"", "", self.filetext)
 		self.filetext = re.sub(r"inkscape:export-xdpi=\".*?\"", "", self.filetext)
 		self.filetext = re.sub(r"docname=\".*?\"", "", self.filetext)
-		
+	
+	def clearId(self, name):
+		matches = re.findall(re.escape(name) + r"[\d-]{1,}", self.filetext)
+		for match in matches:
+			if re.search("#" + match, self.filetext) is None:
+				#print(match + " " + "id=\"{match}\"".format(match = match))
+				print("Remove some uselsess ID: " + match);
+				self.filetext = self.filetext.replace("id=\"{match}\"".format(match = match), "")
+				
+	def clearPathStyle(self):
+		paths = re.findall(r"<path.*?/>", self.filetext)
+		count = 0
+		for path in paths:
+			#print(path)
+			if re.search(r"stroke:none", path):
+				count += 1
+				print("Remove stroke none useless style definitions from path objects number: {nr}".format(nr = count))
+				newpath = re.sub(r"color:.*?;", "", path)
+				newpath = re.sub(r"stroke-width:\d+;", "", newpath)
+				self.filetext = self.filetext.replace(path, newpath, 1)
+				#print("newpath = " + newpath)
+	
 	def write(self):
-		writefile = open(self.targetfilename, "w")
-		
-		writefile.write(self.filetext)
-		
-		writefile.close()
+		with open(self.targetfilename, "w") as writefile:
+			writefile.write(self.filetext)
 
 print(sys.argv)
-
-for i in sys.argv[1:]:
-	svgclear = SvgClear(i)
-
+#SvgClear("Uwaga.svg")
+for svgFile in sys.argv[1:]:
+	svgclear = SvgClear(svgFile)
+print("It is done Youri?\nNo camrat premier, it is only began")
+k = input()
